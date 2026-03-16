@@ -5,6 +5,7 @@ from .models import Employee, Attendance
 from .serializers import EmployeeSerializer, AttendanceSerializer
 from django.utils.timezone import now
 from django.db import transaction
+from datetime import date
 
 @api_view(['GET', 'POST'])
 def employee_list(request):
@@ -33,12 +34,24 @@ def delete_employee(request, pk):
 def mark_attendance(request):
     if request.method == 'GET':
         attendance = Attendance.objects.all()
-        return Response([{"id": a.id, "status": a.status} for a in attendance])
+        return Response([{
+            "id": a.id, 
+            "employee": a.employee.name, 
+            "status": a.status, 
+            "date": a.date
+        } for a in attendance])
 
     if request.method == 'POST':
-        employee_id = request.data.get('employee')
+        print("Received Data:", request.data)
+
+        employee_id = request.data.get('employee_id') or request.data.get('employee') or request.data.get('emp_id')
         status_val = request.data.get('status')
-        date_val = request.data.get('date') 
+        
+        date_val = request.data.get('date') or date.today()
+
+        if not employee_id or not status_val:
+            return Response({"error": "Missing employee ID or status"}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             employee = Employee.objects.get(id=employee_id)
             Attendance.objects.create(
@@ -47,8 +60,9 @@ def mark_attendance(request):
                 date=date_val
             )
             return Response({"message": "Attendance marked successfully!"}, status=status.HTTP_201_CREATED)
+        
         except Employee.DoesNotExist:
-            return Response({"error": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": f"Employee with ID {employee_id} not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 

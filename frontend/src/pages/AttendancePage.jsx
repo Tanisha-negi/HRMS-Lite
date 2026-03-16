@@ -26,7 +26,7 @@ const AttendancePage = () => {
         const empRes = await getEmployees();
         setEmployees(empRes.data);
 
-        const attRes = await axios.get(`http://127.0.0.1:8000/api/attendance/?date=${selectedDate}`);
+        const attRes = await axios.get(`https://hrms-lite-f0w0.onrender.com/api/attendance/?date=${selectedDate}`);
         
         if (attRes && attRes.data) {
           const mapped = {};
@@ -53,31 +53,32 @@ const AttendancePage = () => {
   };
 
   const handleSaveAll = async () => {
-    if (Object.keys(attendanceData).length === 0) {
-      triggerFlash("No attendance data to save.", "error");
-      return;
-    }
+  if (Object.keys(attendanceData).length === 0) {
+    triggerFlash("No attendance data to save.", "error");
+    return;
+  }
 
-    setIsSaving(true);
-    try {
-      const recordsToSave = Object.keys(attendanceData).map(empId => ({
-        employee: empId,
+  setIsSaving(true);
+  try {
+    // We will save each record one by one to match your current Django view
+    const promises = Object.keys(attendanceData).map(empId => {
+      return axios.post(`https://hrms-lite-f0w0.onrender.com/api/attendance/`, {
+        employee_id: empId,
         date: selectedDate,
         status: attendanceData[empId].status
-      }));
-
-      await axios.post(`http://127.0.0.1:8000/api/attendance/`, {
-        records: recordsToSave
       });
+    });
 
-      triggerFlash("Attendance records saved successfully!", "success");
-    } catch (err) {
-      console.error("Save Error:", err.response?.data);
-      triggerFlash("Failed to save records. Please try again.", "error");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    await Promise.all(promises); // Wait for all to finish
+
+    triggerFlash("Attendance records saved successfully!", "success");
+  } catch (err) {
+    console.error("Save Error:", err.response?.data);
+    triggerFlash("Failed to save records. Please try again.", "error");
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   return (
     <div className="animate-in fade-in duration-700 max-w-5xl mx-auto px-6 -mt-10 pt-0">

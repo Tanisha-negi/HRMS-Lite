@@ -33,38 +33,43 @@ def delete_employee(request, pk):
 @api_view(['GET', 'POST'])
 def mark_attendance(request):
     if request.method == 'GET':
-        attendance = Attendance.objects.all()
-        return Response([{
-            "id": a.id, 
-            "employee": a.employee.name, 
-            "status": a.status, 
-            "date": a.date
-        } for a in attendance])
+        try:
+            date_str = request.query_params.get('date')
+            # If date is provided, filter by it. If not, get all.
+            if date_str:
+                attendance = Attendance.objects.filter(date=date_str)
+            else:
+                attendance = Attendance.objects.all()
+                
+            return Response([{
+                "id": a.id, 
+                "employee": a.employee.id, # Send ID so React can map it
+                "status": a.status, 
+                "date": a.date
+            } for a in attendance])
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
 
     if request.method == 'POST':
-        print("Received Data:", request.data)
-
-        employee_id = request.data.get('employee_id') or request.data.get('employee') or request.data.get('emp_id')
+        employee_id = request.data.get('employee_id')
         status_val = request.data.get('status')
-        
-        date_val = request.data.get('date') or date.today()
-
-        if not employee_id or not status_val:
-            return Response({"error": "Missing employee ID or status"}, status=status.HTTP_400_BAD_REQUEST)
+        date_val = request.data.get('date')
 
         try:
             employee = Employee.objects.get(id=employee_id)
-            Attendance.objects.create(
+            
+            # Use update_or_create to prevent the 400 error!
+            # This will update the record if it exists, or create it if it doesn't.
+            obj, created = Attendance.objects.update_or_create(
                 employee=employee,
-                status=status_val,
-                date=date_val
+                date=date_val,
+                defaults={'status': status_val}
             )
-            return Response({"message": "Attendance marked successfully!"}, status=status.HTTP_201_CREATED)
+            
+            return Response({"message": "Saved!"}, status=status.HTTP_201_CREATED)
         
-        except Employee.DoesNotExist:
-            return Response({"error": f"Employee with ID {employee_id} not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(e)}, status=400)
 
 @api_view(['GET'])
 def employee_attendance(request, emp_id):

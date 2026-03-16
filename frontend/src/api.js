@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Ensure this matches your Django server address
-const API_URL = 'http://127.0.0.1:8000/api'; 
+const API_URL = 'https://hrms-lite-f0w0.onrender.com/api'; 
 
 // Fetch all employees
 export const getEmployees = () => {

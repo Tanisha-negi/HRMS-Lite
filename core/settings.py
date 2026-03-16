@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-=hw57gu8p$bz^+c7cuio$725xvtj$w-^52sk=vt&5-)g&nlqh&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['hrms-lite-f0w0.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['hrms-lite-f0w0.onrender.com', 'localhost', '127.0.0.1', 'hrms-lite-frontend-tan.vercel.app']
 
 # Application definition
 

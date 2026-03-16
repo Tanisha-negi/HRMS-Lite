@@ -32,27 +32,25 @@ def delete_employee(request, pk):
 @api_view(['GET', 'POST'])
 def mark_attendance(request):
     if request.method == 'GET':
-        date_str = request.query_params.get('date', now().date())
-        records = Attendance.objects.filter(date=date_str)
-        serializer = AttendanceSerializer(records, many=True)
-        return Response(serializer.data)
+        attendance = Attendance.objects.all()
+        return Response([{"id": a.id, "status": a.status} for a in attendance])
 
-    elif request.method == 'POST':
-        records = request.data.get('records', [])
-        
+    if request.method == 'POST':
+        employee_id = request.data.get('employee')
+        status_val = request.data.get('status')
+        date_val = request.data.get('date') 
         try:
-            with transaction.atomic():
-                for item in records:
-                    Attendance.objects.update_or_create(
-                        employee_id=item.get('employee'),
-                        date=item.get('date'),
-                        defaults={'status': item.get('status')}
-                    )
-            return Response({"message": f"Updated {len(records)} records"}, status=201)
-        
+            employee = Employee.objects.get(id=employee_id)
+            Attendance.objects.create(
+                employee=employee,
+                status=status_val,
+                date=date_val
+            )
+            return Response({"message": "Attendance marked successfully!"}, status=status.HTTP_201_CREATED)
+        except Employee.DoesNotExist:
+            return Response({"error": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            print(f"BATCH ERROR: {str(e)}")
-            return Response({"error": str(e)}, status=500)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 def employee_attendance(request, emp_id):
